@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KNOCK — Knowledge Network Operations Center Kernel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+
+  <div id="screen-home">
+
+    <div class="home-topbar">
+      <div id="home-clock">--/--/---- --:--:--</div>
+      <div class="home-links">
+        <button class="home-link-btn home-link-alert" onclick="goToDashboard()">⚑ Avisos <span id="home-link-badge" style="display:none" class="home-link-badge">0</span></button>
+        <button class="home-link-btn" onclick="goToRegister()">Registrar incidente</button>
+        <button class="home-link-btn" onclick="showAllResults()">Ver todos</button>
+        <button class="home-link-btn home-link-sync" onclick="NOC_SYNC.openPanel()">☁ Backup</button>
+      </div>
+    </div>
+
+    <div class="home-center">
+      <div class="home-logo">
+        <span class="logo-k">K</span><span class="logo-n">N</span><span class="logo-o">O</span><span class="logo-c">C</span><span class="logo-k2">K</span>
+      </div>
+      <p class="home-subtitle">Knowledge Network Operations Center Kernel</p>
+
+      <!-- Banner de avisos ativos -->
+      <div id="home-alert-banner" class="home-alert-banner" onclick="goToDashboard()" style="display:none">
+        <span class="home-alert-icon">⚑</span>
+        <span id="home-alert-text">Há avisos pendentes de confirmação</span>
+        <span class="home-alert-arrow">→ Ver avisos</span>
+      </div>
+
+      <div class="home-search-wrap">
+        <div class="home-search-box">
+          <span class="home-search-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+          </span>
+          <input type="text" id="home-input" placeholder="Pesquisar no KNOCK" autocomplete="off" spellcheck="false">
+          <button class="home-clear-btn" id="home-clear-btn" title="Limpar" style="display:none">✕</button>
+        </div>
+        <div class="home-autocomplete" id="home-autocomplete"></div>
+      </div>
+
+      <div class="home-buttons">
+        <button class="home-btn-primary" id="btn-home-search">Pesquisa KNOCK</button>
+        <button class="home-btn-secondary" onclick="showAllResults()">Ver todos os incidentes</button>
+        <button class="home-btn-ka" onclick="showAppScreen('alertas-conhecidos')">⚡ Alertas Conhecidos</button>
+        <button class="home-btn-dashboard" onclick="goToDashboard()">⚑ Dashboard de Avisos</button>
+      </div>
+
+      <div class="home-quick-tags">
+        <span class="quick-label">Buscas frequentes:</span>
+        <button class="quick-tag" data-q="latência">latência</button>
+        <button class="quick-tag" data-q="firewall">firewall</button>
+        <button class="quick-tag" data-q="CPU">CPU alta</button>
+        <button class="quick-tag" data-q="disco">disco cheio</button>
+        <button class="quick-tag" data-q="VPN">VPN</button>
+        <button class="quick-tag" data-q="backup">backup</button>
+      </div>
+    </div>
+
+    <div class="home-footer">
+      <span>KNOCK — Knowledge Network Operations Center Kernel</span>
+      <span class="home-footer-sep">·</span>
+      <span id="home-footer-count">0 incidentes registrados</span>
+      <span class="home-footer-sep">·</span>
+      <span id="home-footer-alerts">0 avisos ativos</span>
+    </div>
+
+  </div>
+
+
+  <div id="screen-app" style="display:none">
+
+    <header id="topbar">
+      <div class="topbar-left">
+        <button class="topbar-logo-btn" onclick="goHome()" title="Voltar ao início">
+          <span class="logo-sm-k">K</span><span class="logo-sm-n">N</span><span class="logo-sm-o">O</span><span class="logo-sm-c">C</span><span class="logo-sm-k2">K</span>
+        </button>
+        <div class="topbar-search-wrap">
+          <span class="topbar-search-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+          </span>
+          <input type="text" id="search-input" placeholder="Pesquisar incidentes…" autocomplete="off">
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="topbar-alerts-btn" onclick="showAppScreen('dashboard')" id="topbar-alert-btn" style="display:none">
+          <span>⚑</span>
+          <span class="topbar-alert-badge" id="topbar-alert-badge">0</span>
+        </button>
+        <div class="status-dot">Sistema ativo</div>
+        <div id="live-clock">--:--:--</div>
+        <button class="btn btn-sync-topbar" onclick="NOC_SYNC.openPanel()" title="Backup / Restaurar dados">☁ Backup</button>
+        <button class="btn btn-primary btn-sm" onclick="goToRegister()">+ Registrar</button>
+      </div>
+    </header>
+
+    <nav id="nav-tabs">
+      <button class="tab-btn active" data-tab="busca">
+        Consultar incidentes
+        <span class="tab-badge" id="tab-count">0</span>
+      </button>
+      <button class="tab-btn" data-tab="cadastro">Registrar incidente</button>
+      <button class="tab-btn tab-btn-alerts" data-tab="dashboard">
+        ⚑ Avisos
+        <span class="tab-badge tab-badge-alert" id="tab-alert-count">0</span>
+      </button>
+      <button class="tab-btn tab-btn-kb" data-tab="alertas-conhecidos">
+        ⚡ Alertas Conhecidos
+        <span class="tab-badge tab-badge-kb" id="tab-kb-count">0</span>
+      </button>
+    </nav>
+
+    <main id="main-content">
+
+
+      <div id="panel-busca" class="panel active">
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-label">Total de incidentes</div><div class="stat-value" id="stat-total">0</div></div>
+          <div class="stat-card stat-green"><div class="stat-label">Resolvidos</div><div class="stat-value" id="stat-resolved">0</div></div>
+          <div class="stat-card stat-yellow"><div class="stat-label">Em andamento</div><div class="stat-value" id="stat-ongoing">0</div></div>
+          <div class="stat-card stat-accent"><div class="stat-label">Base de conhecimento</div><div class="stat-value" id="stat-kb">0</div></div>
+        </div>
+        <div class="filter-bar">
+          <div class="filter-row">
+            <span class="filter-label">Status:</span>
+            <button class="filter-chip active" data-status="all">Todos</button>
+            <button class="filter-chip" data-status="resolvido">✓ Resolvido</button>
+            <button class="filter-chip" data-status="em andamento">⚠ Em andamento</button>
+            <span class="filter-label ml">Campo:</span>
+            <button class="filter-chip active" data-field="all">Todos</button>
+            <button class="filter-chip" data-field="problema">Problema</button>
+            <button class="filter-chip" data-field="sintoma">Sintoma</button>
+            <button class="filter-chip" data-field="causa">Causa</button>
+            <div class="filter-right">
+              <select id="filter-tool" class="filter-select"><option value="all">Todas as ferramentas</option></select>
+              <button class="btn btn-ghost btn-sm" id="btn-clear-search">Limpar filtros</button>
+            </div>
+          </div>
+        </div>
+        <div class="suggestion-box" id="suggestion-box">
+          <div class="suggestion-header">⚡ Sugestão baseada no histórico</div>
+          <div class="suggestion-text" id="suggestion-text"></div>
+          <div class="suggestion-keywords" id="suggestion-keywords"></div>
+        </div>
+        <div class="results-meta" id="results-meta"></div>
+        <div id="incidents-list"></div>
+      </div>
+
+
+      <div id="panel-cadastro" class="panel">
+        <div class="section-header">
+          <div class="section-title" id="form-title">Registrar novo incidente</div>
+          <button class="btn btn-ghost" id="btn-clear" type="button">↺ Limpar formulário</button>
+        </div>
+        <form id="form-incident" autocomplete="off">
+          <input type="hidden" id="status-hidden" value="resolvido">
+          <div class="form-card">
+            <div class="form-card-title">Identificação do problema</div>
+            <div class="grid-2">
+              <div class="field-group col-span-2">
+                <label class="field-label" for="problema">Problema <span class="required">*</span></label>
+                <input type="text" id="problema" placeholder="Resumo claro do problema ocorrido" required maxlength="200">
+              </div>
+              <div class="field-group col-span-2">
+                <label class="field-label" for="sintoma">Sintoma <span class="required">*</span></label>
+                <textarea id="sintoma" placeholder="O que foi observado? Erros, alertas, relatos de usuários..." required></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="form-card">
+            <div class="form-card-title">Diagnóstico e ação</div>
+            <div class="grid-2">
+              <div class="field-group col-span-2">
+                <label class="field-label" for="causa">Causa Raiz <span class="required">*</span></label>
+                <textarea id="causa" placeholder="O que causou o problema?" required></textarea>
+              </div>
+              <div class="field-group col-span-2">
+                <label class="field-label" for="acao">Ação Tomada <span class="required">*</span></label>
+                <textarea id="acao" placeholder="Quais passos foram executados?" required></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="form-card">
+            <div class="form-card-title">Classificação e metadados</div>
+            <div class="grid-3">
+              <div class="field-group">
+                <label class="field-label">Status <span class="required">*</span></label>
+                <div class="status-toggle">
+                  <button type="button" class="status-btn selected-resolved" data-value="resolvido">✓ Resolvido</button>
+                  <button type="button" class="status-btn" data-value="em andamento">⚠ Em andamento</button>
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="ferramenta">Ferramenta</label>
+                <select id="ferramenta"><option value="">— Selecione —</option></select>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Tags</label>
+                <div class="tags-input-wrapper" id="tags-wrapper">
+                  <input class="tags-input-field" id="tag-input" type="text" placeholder="Adicione tags..." maxlength="40">
+                </div>
+                <div class="tag-hint">Enter, vírgula ou espaço para adicionar</div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <div class="form-actions-left">Data e hora serão registradas automaticamente</div>
+              <button type="submit" class="btn btn-primary" id="btn-submit">Registrar incidente</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+
+      <div id="panel-dashboard" class="panel">
+
+        <div class="section-header">
+          <div>
+            <div class="section-title">⚑ Dashboard de Avisos</div>
+            <div class="section-subtitle">Avisos operacionais do KNOCKK — gerencie ciência e comunicados por turno</div>
+          </div>
+          <button class="btn btn-primary" id="btn-new-alert">+ Novo aviso</button>
+        </div>
+
+        <!-- Stats avisos -->
+        <div class="stats-row">
+          <div class="stat-card stat-red">
+            <div class="stat-label">Não confirmados</div>
+            <div class="stat-value" id="astat-unacked">0</div>
+          </div>
+          <div class="stat-card stat-yellow">
+            <div class="stat-label">Em aberto</div>
+            <div class="stat-value" id="astat-open">0</div>
+          </div>
+          <div class="stat-card stat-green">
+            <div class="stat-label">Confirmados (ack)</div>
+            <div class="stat-value" id="astat-acked">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total de avisos</div>
+            <div class="stat-value" id="astat-total">0</div>
+          </div>
+        </div>
+
+        <!-- Filtros avisos -->
+        <div class="filter-bar">
+          <div class="filter-row">
+            <span class="filter-label">Tipo:</span>
+            <button class="filter-chip active" data-atype="all">Todos</button>
+            <button class="filter-chip" data-atype="geral">🌐 Geral</button>
+            <button class="filter-chip" data-atype="turno">🔄 Turno</button>
+
+            <span class="filter-label ml">Ack:</span>
+            <button class="filter-chip active" data-aack="all">Todos</button>
+            <button class="filter-chip" data-aack="pending">⚠ Pendentes</button>
+            <button class="filter-chip" data-aack="acked">✓ Confirmados</button>
+
+            <span class="filter-label ml">Severidade:</span>
+            <button class="filter-chip active" data-asev="all">Todas</button>
+            <button class="filter-chip" data-asev="critico">🔴 Crítico</button>
+            <button class="filter-chip" data-asev="atencao">🟡 Atenção</button>
+            <button class="filter-chip" data-asev="info">🔵 Info</button>
+
+            <div class="filter-right">
+              <button class="btn btn-ghost btn-sm" id="btn-clear-alert-filters">Limpar filtros</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de avisos -->
+        <div id="alerts-list"></div>
+
+      </div>
+
+
+      <div id="panel-alertas-conhecidos" class="panel">
+
+        <div class="section-header">
+          <div>
+            <div class="section-title">⚡ Base de Alertas Conhecidos</div>
+            <div class="section-subtitle">Registro de alertas recorrentes com ações mapeadas — consulta rápida durante incidentes</div>
+          </div>
+          <button class="btn btn-primary" id="btn-new-ka">+ Novo alerta</button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+          <div class="stat-card stat-ka-aviso">
+            <div class="stat-label">Aviso</div>
+            <div class="stat-value" id="kastat-aviso">0</div>
+          </div>
+          <div class="stat-card stat-ka-medio">
+            <div class="stat-label">Médio</div>
+            <div class="stat-value" id="kastat-medio">0</div>
+          </div>
+          <div class="stat-card stat-ka-alto">
+            <div class="stat-label">Alto</div>
+            <div class="stat-value" id="kastat-alto">0</div>
+          </div>
+          <div class="stat-card stat-ka-desastre">
+            <div class="stat-label">Desastre</div>
+            <div class="stat-value" id="kastat-desastre">0</div>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filter-bar">
+          <div class="filter-row">
+            <span class="filter-label">Severidade:</span>
+            <button class="filter-chip active" data-kasev="all">Todas</button>
+            <button class="filter-chip ka-chip-aviso"   data-kasev="aviso">🟡 Aviso</button>
+            <button class="filter-chip ka-chip-medio"   data-kasev="medio">🟠 Médio</button>
+            <button class="filter-chip ka-chip-alto"    data-kasev="alto">🔴 Alto</button>
+            <button class="filter-chip ka-chip-desastre" data-kasev="desastre">🟥 Desastre</button>
+
+            <span class="filter-label ml">Categoria:</span>
+            <button class="filter-chip active" data-kacat="all">Todas</button>
+            <button class="filter-chip" data-kacat="banco-de-dados">Banco de Dados</button>
+            <button class="filter-chip" data-kacat="bi">BI</button>
+            <button class="filter-chip" data-kacat="backup">Backup</button>
+            <button class="filter-chip" data-kacat="infra">Infra</button>
+            <button class="filter-chip" data-kacat="aplicacao">Aplicação</button>
+            <button class="filter-chip" data-kacat="data-center">Data Center</button>
+            <button class="filter-chip" data-kacat="citrix">Citrix</button>
+            <button class="filter-chip" data-kacat="ad">AD</button>
+            <button class="filter-chip" data-kacat="call-center">Call Center</button>
+            <button class="filter-chip" data-kacat="telefonia">Telefonia</button>
+            <button class="filter-chip" data-kacat="terceiros">Terceiros</button>
+            <button class="filter-chip" data-kacat="gat">GAT</button>
+            <button class="filter-chip" data-kacat="adms">ADMS</button>
+            <button class="filter-chip" data-kacat="redeot">RedeOT</button>
+            <button class="filter-chip" data-kacat="redes">Redes</button>
+            <button class="filter-chip" data-kacat="seguranca">Segurança</button>
+            <button class="filter-chip" data-kacat="fornecedor">Fornecedor</button>
+            <button class="filter-chip" data-kacat="sustentacao">Sustentação</button>
+            <button class="filter-chip" data-kacat="scada">SCADA</button>
+            <button class="filter-chip" data-kacat="pb">PB</button>
+            <button class="filter-chip" data-kacat="web">Web</button>
+            <button class="filter-chip" data-kacat="mobile">Mobile</button>
+            <button class="filter-chip" data-kacat="ti">TI</button>
+
+            <div class="filter-right">
+              <div class="ka-search-wrap">
+                <input type="text" id="ka-search-input" placeholder="Buscar alerta..." class="ka-search-input">
+              </div>
+              <button class="btn btn-ghost btn-sm" id="btn-clear-ka-filters">Limpar filtros</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de alertas conhecidos -->
+        <div class="results-meta" id="ka-results-meta"></div>
+        <div id="ka-list"></div>
+
+      </div><!-- /panel-alertas-conhecidos -->
+
+    </main>
+  </div>
+
+
+  <div id="ka-modal-overlay" class="modal-overlay" style="display:none">
+    <div class="modal-box ka-modal-box">
+      <div class="modal-header">
+        <div class="modal-title" id="ka-modal-title">Novo alerta conhecido</div>
+        <button class="modal-close" id="ka-modal-close">✕</button>
+      </div>
+      <form id="form-ka" autocomplete="off">
+        <input type="hidden" id="ka-edit-id">
+        <div class="modal-body">
+
+          <!-- Nome do alerta -->
+          <div class="field-group">
+            <label class="field-label" for="ka-nome">Nome do alerta <span class="required">*</span></label>
+            <input type="text" id="ka-nome" placeholder="Ex: CPU acima de 90% em servidor de aplicação" required maxlength="150">
+          </div>
+
+          <!-- Descrição / contexto -->
+          <div class="field-group">
+            <label class="field-label" for="ka-descricao">Descrição e contexto</label>
+            <textarea id="ka-descricao" placeholder="Quando este alerta ocorre? O que indica? Qual o impacto esperado?"></textarea>
+          </div>
+
+          <div class="modal-grid-2">
+
+            <!-- Severidade -->
+            <div class="field-group">
+              <label class="field-label">Severidade <span class="required">*</span></label>
+              <div class="ka-sev-toggle">
+                <button type="button" class="ka-sev-btn selected-aviso"   data-kasev="aviso">🟡 Aviso</button>
+                <button type="button" class="ka-sev-btn"                  data-kasev="medio">🟠 Médio</button>
+                <button type="button" class="ka-sev-btn"                  data-kasev="alto">🔴 Alto</button>
+                <button type="button" class="ka-sev-btn"                  data-kasev="desastre">🟥 Desastre</button>
+              </div>
+              <input type="hidden" id="ka-severidade" value="aviso">
+            </div>
+
+            <!-- Categoria -->
+            <div class="field-group">
+              <label class="field-label" for="ka-categoria">Categoria <span class="required">*</span></label>
+              <select id="ka-categoria">
+                <option value="ad">AD</option>
+                <option value="adms">ADMS</option>
+                <option value="aplicacao">Aplicação</option>
+                <option value="backup">Backup</option>
+                <option value="banco-de-dados">Banco de Dados</option>
+                <option value="bi">BI</option>
+                <option value="call-center">Call Center</option>
+                <option value="citrix">Citrix</option>
+                <option value="data-center">Data Center</option>
+                <option value="fornecedor">Fornecedor</option>
+                <option value="gat">GAT</option>
+                <option value="infra">Infra</option>
+                <option value="mobile">Mobile</option>
+                <option value="pb">PB</option>
+                <option value="redeot">RedeOT</option>
+                <option value="redes">Redes</option>
+                <option value="scada">SCADA</option>
+                <option value="seguranca">Segurança</option>
+                <option value="sustentacao">Sustentação</option>
+                <option value="telefonia">Telefonia</option>
+                <option value="terceiros">Terceiros</option>
+                <option value="ti">TI</option>
+                <option value="web">Web</option>
+              </select>
+            </div>
+
+          </div>
+
+          <!-- Causa provável -->
+          <div class="field-group">
+            <label class="field-label" for="ka-causa">Causa provável <span class="required">*</span></label>
+            <textarea id="ka-causa" placeholder="Quais as causas mais comuns deste alerta?" required></textarea>
+          </div>
+
+          <!-- Ação recomendada -->
+          <div class="field-group">
+            <label class="field-label" for="ka-acao">Ação recomendada <span class="required">*</span></label>
+            <textarea id="ka-acao" placeholder="Passo a passo do que deve ser feito ao receber este alerta..." required style="min-height:110px"></textarea>
+          </div>
+
+          <div class="modal-grid-2">
+
+            <!-- Ferramenta -->
+            <div class="field-group">
+              <label class="field-label" for="ka-ferramenta">Ferramenta de origem</label>
+              <select id="ka-ferramenta">
+                <option value="">— Selecione —</option>
+                <option>Zabbix</option>
+                <option>Grafana</option>
+                <option>Nagios</option>
+                <option>Datadog</option>
+                <option>SolarWinds</option>
+                <option>PRTG</option>
+                <option>Prometheus</option>
+                <option>Splunk</option>
+                <option>ELK</option>
+                <option>Dynatrace</option>
+                <option>New Relic</option>
+                <option>Oracle</option>
+                <option>PagerDuty</option>
+                <option>OpsGenie</option>
+                <option>Outro</option>
+              </select>
+            </div>
+
+            <!-- Tags -->
+            <div class="field-group">
+              <label class="field-label">Tags</label>
+              <div class="tags-input-wrapper" id="ka-tags-wrapper">
+                <input class="tags-input-field" id="ka-tag-input" type="text" placeholder="Adicione tags..." maxlength="40">
+              </div>
+              <div class="tag-hint">Enter, vírgula ou espaço para adicionar</div>
+            </div>
+
+          </div>
+
+          <!-- Quando escalar -->
+          <div class="field-group">
+            <label class="field-label" for="ka-escalar">Quando escalar / acionar sobreaviso</label>
+            <textarea id="ka-escalar" placeholder="Em quais situações este alerta deve ser escalado para o sobreaviso ou gestor?" style="min-height:70px"></textarea>
+          </div>
+
+          <!-- Imagem de referência -->
+          <div class="field-group">
+            <label class="field-label">Imagem de referência</label>
+            <div class="ka-image-upload-area" id="ka-image-area">
+              <input type="file" id="ka-image-input" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display:none">
+              <div class="ka-image-dropzone" id="ka-image-dropzone">
+                <span class="ka-image-drop-icon">📷</span>
+                <span class="ka-image-drop-text">Clique para anexar imagem</span>
+                <span class="ka-image-drop-sub">PNG, JPG, GIF, WebP · compressão automática</span>
+              </div>
+              <div class="ka-image-preview-wrap" id="ka-image-preview-wrap" style="display:none">
+                <img id="ka-image-preview" class="ka-image-preview" src="" alt="Preview">
+                <div class="ka-image-preview-info">
+                  <span id="ka-image-name" class="ka-image-filename">—</span>
+                  <button type="button" class="ka-image-remove" id="ka-image-remove" title="Remover imagem">✕ Remover</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="btn-cancel-ka">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-ka">Salvar alerta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- MODAL — Criar / Editar Aviso -->
+  <div id="modal-overlay" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title">Novo aviso</div>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+      <form id="form-alert" autocomplete="off">
+        <input type="hidden" id="alert-edit-id">
+        <div class="modal-body">
+
+          <div class="field-group">
+            <label class="field-label" for="alert-titulo">Título do aviso <span class="required">*</span></label>
+            <input type="text" id="alert-titulo" placeholder="Resumo claro e objetivo do aviso" required maxlength="150">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="alert-descricao">Descrição</label>
+            <textarea id="alert-descricao" placeholder="Detalhes, contexto, impacto esperado, orientações ao time..."></textarea>
+          </div>
+
+          <div class="modal-grid-3">
+            <!-- Tipo -->
+            <div class="field-group">
+              <label class="field-label">Tipo <span class="required">*</span></label>
+              <div class="type-toggle">
+                <button type="button" class="type-btn selected-geral" data-avalue="geral">🌐 Geral</button>
+                <button type="button" class="type-btn" data-avalue="turno">🔄 Turno</button>
+              </div>
+              <input type="hidden" id="alert-tipo" value="geral">
+            </div>
+
+            <!-- Severidade -->
+            <div class="field-group">
+              <label class="field-label">Severidade <span class="required">*</span></label>
+              <div class="sev-toggle">
+                <button type="button" class="sev-btn selected-info" data-sev="info">🔵 Info</button>
+                <button type="button" class="sev-btn" data-sev="atencao">🟡 Atenção</button>
+                <button type="button" class="sev-btn" data-sev="critico">🔴 Crítico</button>
+              </div>
+              <input type="hidden" id="alert-severidade" value="info">
+            </div>
+
+            <!-- Turno (condicional) -->
+            <div class="field-group" id="turno-field" style="display:none">
+              <label class="field-label" for="alert-turno">Turno específico</label>
+              <select id="alert-turno">
+                <option value="">— Selecione —</option>
+                <option value="Manhã (06h–14h)">Manhã (06h–14h)</option>
+                <option value="Tarde (14h–22h)">Tarde (14h–22h)</option>
+                <option value="Noite (22h–06h)">Noite (22h–06h)</option>
+                <option value="Plantão 12h A">Plantão 12h A</option>
+                <option value="Plantão 12h B">Plantão 12h B</option>
+              </select>
+            </div>
+
+          </div>
+
+          <div class="modal-grid-2">
+            <!-- Tags -->
+            <div class="field-group">
+              <label class="field-label">Tags</label>
+              <div class="tags-input-wrapper" id="alert-tags-wrapper">
+                <input class="tags-input-field" id="alert-tag-input" type="text" placeholder="Adicione tags..." maxlength="40">
+              </div>
+              <div class="tag-hint">Enter, vírgula ou espaço para adicionar</div>
+            </div>
+
+            <!-- Responsável -->
+            <div class="field-group">
+              <label class="field-label" for="alert-responsavel">Analista responsável</label>
+              <input type="text" id="alert-responsavel" placeholder="Nome do analista que criou o aviso" maxlength="80">
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="btn-cancel-alert">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-alert">Criar aviso</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <div id="ack-modal-overlay" class="modal-overlay" style="display:none">
+    <div class="modal-box modal-box-sm">
+      <div class="modal-header">
+        <div class="modal-title">✓ Confirmar ciência (Acknowledge)</div>
+        <button class="modal-close" id="ack-modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="ack-aviso-preview" id="ack-aviso-preview"></div>
+        <div class="field-group" style="margin-top:14px">
+          <label class="field-label" for="ack-nome">Seu nome <span class="required">*</span></label>
+          <input type="text" id="ack-nome" placeholder="Digite seu nome para registrar o acknowledge" maxlength="80">
+        </div>
+        <div class="field-group" style="margin-top:10px">
+          <label class="field-label" for="ack-comentario">Comentário (opcional)</label>
+          <textarea id="ack-comentario" placeholder="Observações sobre o acknowledge..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" id="btn-cancel-ack">Cancelar</button>
+        <button type="button" class="btn btn-ack" id="btn-confirm-ack">✓ Registrar acknowledge</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="sync-modal-overlay" class="modal-overlay" style="display:none">
+    <div class="modal-box sync-modal-box">
+
+      <div class="modal-header">
+        <div class="modal-title">☁ Backup &amp; Restauração — OneDrive</div>
+        <button class="modal-close" id="sync-modal-close">✕</button>
+      </div>
+
+      <div class="modal-body sync-modal-body">
+
+        <!-- Status do último backup -->
+        <div class="sync-status-bar" id="sync-status-bar">
+          <span class="sync-status-icon" id="sync-status-icon">💾</span>
+          <div class="sync-status-info">
+            <span class="sync-status-label" id="sync-status-label">Nenhum backup realizado nesta sessão</span>
+            <span class="sync-status-sub"  id="sync-status-sub">Exporte os dados para salvar no OneDrive</span>
+          </div>
+        </div>
+
+        <!-- Resumo dos dados -->
+        <div class="sync-summary" id="sync-summary">
+          <div class="sync-summary-item">
+            <span class="sync-sum-icon">📋</span>
+            <span class="sync-sum-label">Incidentes</span>
+            <span class="sync-sum-count" id="sync-count-inc">0</span>
+          </div>
+          <div class="sync-summary-item">
+            <span class="sync-sum-icon">⚑</span>
+            <span class="sync-sum-label">Avisos</span>
+            <span class="sync-sum-count" id="sync-count-alerts">0</span>
+          </div>
+          <div class="sync-summary-item">
+            <span class="sync-sum-icon">⏱</span>
+            <span class="sync-sum-label">Timers ativos</span>
+            <span class="sync-sum-count" id="sync-count-timers">0</span>
+          </div>
+          <div class="sync-summary-item">
+            <span class="sync-sum-icon">🕒</span>
+            <span class="sync-sum-label">Último backup</span>
+            <span class="sync-sum-count" id="sync-last-date">—</span>
+          </div>
+        </div>
+
+        <!-- Separador -->
+        <div class="sync-divider">
+          <span>EXPORTAR — salvar no OneDrive</span>
+        </div>
+
+        <!-- Opções de exportação -->
+        <div class="sync-export-options">
+
+          <div class="sync-option-card" id="sync-opt-full">
+            <div class="sync-option-icon">📦</div>
+            <div class="sync-option-info">
+              <div class="sync-option-title">Backup completo</div>
+              <div class="sync-option-desc">Incidentes + Avisos + Timers + configurações. Arquivo único <code>noc_backup_YYYY-MM-DD.json</code></div>
+            </div>
+            <button class="btn btn-primary btn-sm sync-btn-export" data-mode="full">⬇ Exportar</button>
+          </div>
+
+          <div class="sync-option-card" id="sync-opt-incidents">
+            <div class="sync-option-icon">📋</div>
+            <div class="sync-option-info">
+              <div class="sync-option-title">Somente incidentes</div>
+              <div class="sync-option-desc">Arquivo <code>noc_incidents_YYYY-MM-DD.json</code> — útil para compartilhar com outro turno</div>
+            </div>
+            <button class="btn btn-ghost btn-sm sync-btn-export" data-mode="incidents">⬇ Exportar</button>
+          </div>
+
+          <div class="sync-option-card" id="sync-opt-alerts">
+            <div class="sync-option-icon">⚑</div>
+            <div class="sync-option-info">
+              <div class="sync-option-title">Somente avisos</div>
+              <div class="sync-option-desc">Arquivo <code>noc_alerts_YYYY-MM-DD.json</code> — passagem de turno</div>
+            </div>
+            <button class="btn btn-ghost btn-sm sync-btn-export" data-mode="alerts">⬇ Exportar</button>
+          </div>
+
+        </div>
+
+        <!-- Separador -->
+        <div class="sync-divider">
+          <span>IMPORTAR — restaurar do OneDrive</span>
+        </div>
+
+        <!-- Área de importação -->
+        <div class="sync-import-area" id="sync-import-area">
+          <input type="file" id="sync-file-input" accept=".json" style="display:none">
+          <div class="sync-dropzone" id="sync-dropzone">
+            <div class="sync-drop-icon">📂</div>
+            <div class="sync-drop-title">Arraste o arquivo JSON aqui</div>
+            <div class="sync-drop-sub">ou <button class="sync-drop-link" id="sync-drop-btn">clique para selecionar</button></div>
+            <div class="sync-drop-hint">Arquivos aceitos: <code>noc_backup_*.json</code></div>
+          </div>
+        </div>
+
+        <!-- Preview do arquivo importado (oculto até selecionar) -->
+        <div class="sync-import-preview" id="sync-import-preview" style="display:none">
+          <div class="sync-preview-header">
+            <span class="sync-preview-icon">📄</span>
+            <div class="sync-preview-info">
+              <div class="sync-preview-name" id="sync-preview-name">arquivo.json</div>
+              <div class="sync-preview-meta" id="sync-preview-meta">—</div>
+            </div>
+            <button class="sync-preview-clear" id="sync-preview-clear">✕</button>
+          </div>
+          <div class="sync-preview-counts" id="sync-preview-counts"></div>
+          <div class="sync-merge-options">
+            <div class="sync-merge-label">Modo de importação:</div>
+            <div class="sync-merge-btns">
+              <button class="sync-merge-btn active" data-merge="merge" id="sync-merge-merge">
+                <strong>Mesclar</strong>
+                <span>Adiciona registros novos, mantém os existentes</span>
+              </button>
+              <button class="sync-merge-btn" data-merge="replace" id="sync-merge-replace">
+                <strong>Substituir</strong>
+                <span>Apaga tudo e restaura do arquivo</span>
+              </button>
+            </div>
+          </div>
+          <button class="btn btn-primary sync-btn-import" id="sync-btn-do-import">⬆ Importar agora</button>
+        </div>
+
+        <!-- Instruções OneDrive -->
+        <div class="sync-instructions">
+          <div class="sync-inst-title">📘 Como salvar no OneDrive</div>
+          <ol class="sync-inst-list">
+            <li>Clique em <strong>Exportar</strong> — o arquivo será baixado automaticamente</li>
+            <li>Abra a pasta <strong>OneDrive</strong> no seu computador</li>
+            <li>Crie uma pasta chamada <strong>KNOCK</strong> (só na primeira vez)</li>
+            <li>Mova o arquivo baixado para essa pasta — o OneDrive sincroniza automaticamente ☁</li>
+            <li>Para restaurar em outra máquina: baixe o arquivo da pasta OneDrive e use o <strong>Importar</strong></li>
+          </ol>
+        </div>
+
+      </div><!-- /modal-body -->
+
+      <div class="modal-footer sync-modal-footer">
+        <div class="sync-footer-auto">
+          <label class="sync-auto-label">
+            <input type="checkbox" id="sync-auto-export" class="sync-auto-check">
+            <span>Lembrar de exportar ao sair da página</span>
+          </label>
+        </div>
+        <button class="btn btn-ghost" id="sync-btn-close">Fechar</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="script.js"></script>
+  <script src="timer.js"></script>
+  <script src="sync.js"></script>
+  <script src="alertas-conhecidos.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="auth.js"></script>
+</body>
+</html>
