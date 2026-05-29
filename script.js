@@ -83,15 +83,8 @@ async function loadData() {
 
   // Avisos
   const storedAlerts = localStorage.getItem('noc_alerts');
-  // Só carrega seed se NUNCA houve dados (flag de primeira vez)
-  const seedFlag = localStorage.getItem('noc_alerts_initialized');
   if (storedAlerts) {
     try { alerts = JSON.parse(storedAlerts); } catch(e) { alerts = []; }
-  }
-  if (!seedFlag) {
-    // Primeira abertura: carrega exemplos e marca como inicializado
-    if (alerts.length === 0) { alerts = getSeedAlerts(); saveAlerts(); }
-    localStorage.setItem('noc_alerts_initialized', '1');
   }
 
   refreshAll();
@@ -110,15 +103,6 @@ function refreshAll() {
   renderAlertsList();
 }
 
-// Avisos de exemplo para seed
-function getSeedAlerts() {
-  return [
-    { id: 'AVS-001', titulo: 'Manutenção programada — Link de fibra SP-RJ', descricao: 'Janela de manutenção programada pela operadora para substituição de amplificador óptico no trecho SP-RJ. Possível degradação de 10 a 15% no throughput entre 02h–04h. Monitorar enlace e acionar backup BGP se necessário.', tipo: 'geral', severidade: 'atencao', turno: '', responsavel: 'Carlos Mendes', tags: ['manutenção','fibra','SP-RJ','BGP'], datahora: new Date(Date.now() - 3600000*2).toISOString(), acks: [], aberto: true },
-    { id: 'AVS-002', titulo: 'Servidor de autenticação LDAP com latência elevada', descricao: 'O servidor LDAP-01 está respondendo acima de 400ms nas consultas. Impacta login de usuários em sistemas corporativos. Time de infra já notificado.', tipo: 'turno', severidade: 'critico', turno: 'Noite (22h–06h)', responsavel: 'Ana Lima', tags: ['LDAP','autenticação','latência'], datahora: new Date(Date.now() - 3600000*5).toISOString(), acks: [{ nome: 'João Paulo', comentario: 'Ciente. Acompanhando.', datahora: new Date(Date.now() - 3600000*4).toISOString() }], aberto: true },
-    { id: 'AVS-003', titulo: 'Atualização de política de firewall — Segmento DMZ', descricao: 'Novas regras ACL foram aplicadas no FW-BORDER-01 para o segmento DMZ conforme solicitação do time de segurança. Verificar se aplicações expostas continuam acessíveis.', tipo: 'geral', severidade: 'info', turno: '', responsavel: 'Roberto Alves', tags: ['firewall','DMZ','ACL','segurança'], datahora: new Date(Date.now() - 3600000*24).toISOString(), acks: [], aberto: true },
-    { id: 'AVS-004', titulo: 'Storage NAS-02 com ocupação acima de 85%', descricao: 'O volume /data no NAS-02 atingiu 87% de ocupação. Acionar processo de limpeza de snapshots antigos e verificar política de retenção.', tipo: 'turno', severidade: 'atencao', turno: 'Manhã (06h–14h)', responsavel: 'Fernanda Costa', tags: ['storage','NAS','disco','snapshot'], datahora: new Date(Date.now() - 3600000*8).toISOString(), acks: [{ nome: 'Marcos Silva', comentario: 'Ciente. Iniciando limpeza de snapshots.', datahora: new Date(Date.now() - 3600000*7).toISOString() }, { nome: 'Patrícia Rocha', comentario: 'Confirmado. Monitorando.', datahora: new Date(Date.now() - 3600000*6).toISOString() }], aberto: false }
-  ];
-}
 
 // =============================================
 // RELÓGIO
