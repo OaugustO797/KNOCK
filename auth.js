@@ -55,7 +55,7 @@ const KNOCK_AUTH = (() => {
     // Sincroniza dados do Supabase → localStorage
     const syncResult = await KNOCK_DB.syncAll();
     if (syncResult) {
-      // Atualiza variáveis globais do script.js diretamente
+      // Atualiza variáveis globais PRIMEIRO
       if (typeof incidents !== 'undefined' && Array.isArray(syncResult.incidents)) {
         incidents.length = 0;
         syncResult.incidents.forEach(i => incidents.push(i));
@@ -64,8 +64,15 @@ const KNOCK_AUTH = (() => {
         alerts.length = 0;
         syncResult.alerts.forEach(a => alerts.push(a));
       }
+
+      // Aguarda próximo tick para garantir que variáveis estão prontas
+      await new Promise(r => setTimeout(r, 0));
+
       // Recarrega a UI com os dados atualizados
       if (typeof refreshAll === 'function') refreshAll();
+      if (typeof updateFooterCount === 'function') updateFooterCount();
+      if (typeof updateAlertBadges === 'function') updateAlertBadges();
+
       // Notifica módulos independentes (alertas-conhecidos.js)
       window.dispatchEvent(new CustomEvent('knock:synced', { detail: syncResult }));
       showSyncBadge('online');
