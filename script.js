@@ -87,6 +87,14 @@ async function loadData() {
     try { alerts = JSON.parse(storedAlerts); } catch(e) { alerts = []; }
   }
 
+  // Se o Supabase estiver disponível, aguarda o sync antes de renderizar
+  // Isso evita mostrar dados vazios enquanto o banco ainda não respondeu
+  if (typeof KNOCK_DB !== 'undefined' && KNOCK_DB.isOnline()) {
+    // Supabase já logado — o auth.js vai chamar refreshAll após o sync
+    return;
+  }
+
+  // Sem Supabase (offline ou antes do login) — renderiza com dados locais
   refreshAll();
 }
 
